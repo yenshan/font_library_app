@@ -2,6 +2,7 @@ const { app, BrowserWindow, ipcMain, dialog, shell, screen } = require('electron
 const path = require('path')
 const fs = require('fs')
 const { loadWindowState, trackWindowState } = require('./window-state.cjs')
+const { createBrowser } = require('./browser.cjs')
 
 const isDev = process.argv.includes('--dev')
 let fontCatalogCache = null
@@ -52,6 +53,7 @@ function createWindow() {
 
   if (maximized) win.maximize()
   trackWindowState(win, app, statePath)
+  createBrowser(win)
 
   if (isDev) win.loadURL('http://127.0.0.1:5173')
   else win.loadFile(path.join(__dirname, '..', 'dist', 'index.html'))

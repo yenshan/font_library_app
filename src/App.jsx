@@ -1,13 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   ArrowDownToLine, Check, ChevronDown, ExternalLink, Grid2X2, Heart,
-  Info, LayoutList, Minus, Plus, Search, SlidersHorizontal, Sparkles, X,
+  Globe, Info, LayoutList, Minus, Plus, Search, SlidersHorizontal, Sparkles, X,
 } from 'lucide-react'
 import { fonts as fallbackFonts, googleCssUrl } from './fonts'
+import BrowserPanel from './BrowserPanel'
 
 const defaultSample = '言葉に、静かな輪郭を。 Shape your ideas.'
 
 function App() {
+  const [page, setPage] = useState('library')
+  const [browserFont, setBrowserFont] = useState('')
   const [query, setQuery] = useState('')
   const [fontCatalog, setFontCatalog] = useState(fallbackFonts)
   const [catalogState, setCatalogState] = useState('loading')
@@ -112,9 +115,9 @@ function App() {
   }
 
   return (
-    <div className="app-shell">
+    <div className={`app-shell ${page === 'browser' ? 'browser-mode' : ''}`}>
       <header className="topbar">
-        <a className="brand" href="#top" aria-label="Font Dock ホーム">
+        <a className="brand" href="#top" aria-label="Font Dock ホーム" onClick={() => setPage('library')}>
           <span className="brand-mark"><span>F</span><span>d</span></span>
           <span>Font Dock</span>
         </a>
@@ -124,6 +127,7 @@ function App() {
           <kbd>⌘ K</kbd>
         </div>
         <div className="header-actions">
+          <button className={`browser-tab ${page === 'browser' ? 'active' : ''}`} onClick={() => setPage(page === 'browser' ? 'library' : 'browser')}><Globe size={16} />{page === 'browser' ? '一覧に戻る' : 'ブラウザ'}</button>
           <button className="help-button" title="このアプリについて"><Info size={19} /></button>
           <div className="avatar">YT</div>
         </div>
@@ -135,12 +139,13 @@ function App() {
           <button onClick={() => setShowFilters(false)}><X size={20} /></button>
         </div>
         <nav className="side-nav">
-          <button className={!onlyFavorites ? 'active' : ''} onClick={() => setOnlyFavorites(false)}>
+          <button className={page === 'library' && !onlyFavorites ? 'active' : ''} onClick={() => { setOnlyFavorites(false); setPage('library') }}>
             <Sparkles size={17} />見つける<span>{fontCatalog.length}</span>
           </button>
-          <button className={onlyFavorites ? 'active' : ''} onClick={() => setOnlyFavorites(true)}>
+          <button className={page === 'library' && onlyFavorites ? 'active' : ''} onClick={() => { setOnlyFavorites(true); setPage('library') }}>
             <Heart size={17} />お気に入り<span>{favorites.length}</span>
           </button>
+          <button className={page === 'browser' ? 'active' : ''} onClick={() => setPage('browser')}><Globe size={17} />Webで試す</button>
         </nav>
         <div className="side-section">
           <div className="side-label">カテゴリー</div>
@@ -166,7 +171,9 @@ function App() {
         </div>
       </aside>
 
-      <main className="main-content" id="top">
+      <BrowserPanel active={page === 'browser'} fonts={fontCatalog} family={browserFont} onFamilyChange={setBrowserFont} />
+
+      <main className="main-content" id="top" hidden={page !== 'library'}>
         <section className="intro">
           <div>
             <span className="eyebrow">OPEN FONT LIBRARY · {catalogState === 'loading' ? 'カタログ読込中' : `${fontCatalog.length.toLocaleString()} FAMILIES`}</span>
@@ -211,7 +218,8 @@ function App() {
           <section className={`font-grid ${view}`}>
             {visibleFonts.slice(0, visibleLimit).map((font) => (
               <FontCard key={font.family} font={font} sample={sample || font.sample || font.family} fontSize={fontSize}
-                favorite={favorites.includes(font.family)} onFavorite={toggleFavorite} onDownload={downloadFont} />
+                favorite={favorites.includes(font.family)} onFavorite={toggleFavorite} onDownload={downloadFont}
+                onPreview={(family) => { setBrowserFont(family); setPage('browser') }} />
             ))}
             {visibleFonts.length > visibleLimit && (
               <button className="load-more" onClick={() => setVisibleLimit((limit) => limit + 24)}>
@@ -236,7 +244,7 @@ function App() {
   )
 }
 
-function FontCard({ font, sample, fontSize, favorite, onFavorite, onDownload }) {
+function FontCard({ font, sample, fontSize, favorite, onFavorite, onDownload, onPreview }) {
   useEffect(() => {
     const id = `font-${font.family.replace(/[^a-z0-9]/gi, '-').toLowerCase()}`
     if (document.getElementById(id)) return
@@ -275,6 +283,7 @@ function FontCard({ font, sample, fontSize, favorite, onFavorite, onDownload }) 
       <div className="card-bottom">
         <button className="license-link" onClick={openSource} title={font.license}>OFL <ExternalLink size={12} /></button>
         <div className="tag-list">{font.tags.map((tag) => <span key={tag}>{tag}</span>)}</div>
+        <button className="web-preview-button" onClick={() => onPreview(font.family)} title="このフォントをWebページで試す"><Globe size={14} /><span>Webで試す</span></button>
         <button className="download-button" onClick={() => onDownload(font)}><ArrowDownToLine size={16} /><span>ダウンロード</span></button>
       </div>
     </article>
